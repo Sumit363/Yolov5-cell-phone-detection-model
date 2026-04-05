@@ -19,7 +19,7 @@ st.markdown("""
 ### Features
 - Detects phones from images
 - Fast YOLO-based detection
-- Clean UI for industrial workflow
+- Scalable with high potential for future enhancements
 
 ### Navigation
 Use the sidebar to open detection pages.
