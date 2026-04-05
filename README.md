@@ -22,6 +22,7 @@ Use Case
 This project can be applied in environments such as device testing, quality control, and automation workflows, similar to real-world industrial setups.
 
 Technologies Used
+
 Python
 OpenCV
 YOLO (ONNX model)
