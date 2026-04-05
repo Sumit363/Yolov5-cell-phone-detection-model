@@ -94,7 +94,7 @@ class YOLO_Pred():
             cv2.rectangle(image,(x,y),(x+w,y+h),colors,2)
             cv2.rectangle(image,(x,y-30),(x+w,y),colors,-1)
 
-            cv2.putText(image,text,(x,y-10),cv2.FONT_HERSHEY_PLAIN,0.7,(0,0,0),2)
+            cv2.putText(image,text,(x,y-10),cv2.FONT_HERSHEY_PLAIN,0.7,(0,0,0),1)
             
             
         return image
