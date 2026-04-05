@@ -2,6 +2,9 @@ import streamlit as st
 from yolo_predictions import YOLO_Pred
 from PIL import Image
 import numpy as np
+from ctdiheader import ctdiheader
+
+ctdiheader()
 
 st.set_page_config(page_title="YOLO Object Detection",
                    layout='wide',
