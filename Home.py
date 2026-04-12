@@ -14,6 +14,7 @@ st.markdown('<div class="content">', unsafe_allow_html=True)
 
 st.title("YOLO V5 Cell Phone Detection App")
 st.caption("This web application demonstrates object detection")
+st.caption("Please Click on Sidebar(left) to visit other pages")
 
 st.markdown("""
 ### Features
