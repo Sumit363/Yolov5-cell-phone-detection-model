@@ -11,7 +11,7 @@ ctdiheader()
 yolo = YOLO_Pred('./models/best.onnx', './models/data.yaml')
 
 
-def video_frame_callback(frame):
+def video_frame_callback(frame):  #need to add ip camera support as well
     try:
         img = frame.to_ndarray(format="bgr24")
         pred_img, phone_count = yolo.predictions(img)

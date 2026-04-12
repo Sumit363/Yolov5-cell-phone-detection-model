@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\Home.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Home.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\yolo_predictions.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:yolo_predictions.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Home.py",
+              "DocumentMoniker": "C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\Home.py",
+              "RelativeDocumentMoniker": "Home.py",
+              "ToolTip": "C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\Home.py",
+              "RelativeToolTip": "Home.py",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-04-10T01:00:56.287Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "yolo_predictions.py",
+              "DocumentMoniker": "C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\yolo_predictions.py",
+              "RelativeDocumentMoniker": "yolo_predictions.py",
+              "ToolTip": "C:\\Users\\sumit\\source\\repos\\Yolov5-cell-phone-detection-model\\yolo_predictions.py",
+              "RelativeToolTip": "yolo_predictions.py",
+              "ViewState": "AgIAAE0AAAAAAAAAAAAkwGcAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-04-10T00:59:45.304Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

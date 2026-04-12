@@ -12,7 +12,7 @@ ctdiheader()
 # Content container
 st.markdown('<div class="content">', unsafe_allow_html=True)
 
-st.title("YOLO V5 Object Detection App")
+st.title("YOLO V5 Cell Phone Detection App")
 st.caption("This web application demonstrates object detection")
 
 st.markdown("""
@@ -26,5 +26,6 @@ Use the sidebar to open detection pages.
 """)
 
 st.page_link("pages/1_YOLO_for_image.py", label="Open YOLO for Image", icon="📷")
+st.page_link("pages/2_YOLO_webrtc.py", label="Open YOLO for Video", icon="📷")
 
 st.markdown('</div>', unsafe_allow_html=True)
