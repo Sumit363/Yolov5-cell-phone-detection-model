@@ -4,3 +4,4 @@ numpy
 pyyaml
 Pillow
 streamlit-webrtc
+tornado
