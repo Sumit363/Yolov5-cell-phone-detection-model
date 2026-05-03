@@ -5,6 +5,7 @@ import os
 
 import cv2
 import numpy as np
+import onnxruntime as ort
 import yaml
 from yaml.loader import SafeLoader
 
@@ -13,22 +14,24 @@ class YOLO_Pred:
     def __init__(self, onnx_model, data_yaml):
         self.onnx_model = onnx_model
         self.data_yaml = data_yaml
+        self.input_size = 640
+        self.conf_threshold = 0.4
+        self.score_threshold = 0.25
+        self.nms_threshold = 0.45
 
         self._validate_files()
+
         self.labels = self._load_labels()
         self.nc = len(self.labels)
         self.colors = self._generate_colors()
 
-        self.yolo = cv2.dnn.readNetFromONNX(self.onnx_model)
+        self.session = ort.InferenceSession(
+            self.onnx_model,
+            providers=["CPUExecutionProvider"],
+        )
 
-        if self.yolo.empty():
-            raise ValueError(
-                "OpenCV loaded an empty ONNX model. "
-                "Please check that best.onnx is valid and fully uploaded."
-            )
-
-        self.yolo.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-        self.yolo.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+        self.input_name = self.session.get_inputs()[0].name
+        self.output_names = [output.name for output in self.session.get_outputs()]
 
     def _validate_files(self):
         if not os.path.exists(self.onnx_model):
@@ -42,7 +45,7 @@ class YOLO_Pred:
         if model_size < 1024 * 1024:
             raise ValueError(
                 f"ONNX model file is too small: {model_size} bytes. "
-                "This may mean best.onnx was not uploaded correctly, "
+                "This usually means best.onnx was not uploaded correctly "
                 "or it is only a Git LFS pointer file."
             )
 
@@ -70,28 +73,25 @@ class YOLO_Pred:
         if image is None:
             raise ValueError("Input image is None.")
 
-        if len(image.shape) != 3:
-            raise ValueError("Input image must be a color image with 3 channels.")
-
         original_h, original_w = image.shape[:2]
 
         max_side = max(original_h, original_w)
         input_image = np.zeros((max_side, max_side, 3), dtype=np.uint8)
         input_image[0:original_h, 0:original_w] = image
 
-        input_size = 640
-
         blob = cv2.dnn.blobFromImage(
             input_image,
             scalefactor=1 / 255.0,
-            size=(input_size, input_size),
+            size=(self.input_size, self.input_size),
             mean=(0, 0, 0),
             swapRB=True,
             crop=False,
         )
 
-        self.yolo.setInput(blob)
-        preds = self.yolo.forward()
+        preds = self.session.run(
+            self.output_names,
+            {self.input_name: blob},
+        )[0]
 
         detections = preds[0]
 
@@ -99,21 +99,23 @@ class YOLO_Pred:
         confidences = []
         class_ids = []
 
-        x_factor = max_side / input_size
-        y_factor = max_side / input_size
+        x_factor = max_side / self.input_size
+        y_factor = max_side / self.input_size
 
         for detection in detections:
             object_confidence = float(detection[4])
 
-            if object_confidence < 0.4:
+            if object_confidence < self.conf_threshold:
                 continue
 
             class_scores = detection[5:]
             class_id = int(np.argmax(class_scores))
             class_score = float(class_scores[class_id])
 
-            if class_score < 0.25:
+            if class_score < self.score_threshold:
                 continue
+
+            confidence = object_confidence * class_score
 
             cx, cy, w, h = detection[0:4]
 
@@ -123,17 +125,17 @@ class YOLO_Pred:
             height = int(h * y_factor)
 
             boxes.append([left, top, width, height])
-            confidences.append(object_confidence)
+            confidences.append(float(confidence))
             class_ids.append(class_id)
 
         phone_count = 0
 
-        if len(boxes) > 0:
+        if boxes:
             indices = cv2.dnn.NMSBoxes(
                 boxes,
                 confidences,
-                score_threshold=0.25,
-                nms_threshold=0.45,
+                score_threshold=self.score_threshold,
+                nms_threshold=self.nms_threshold,
             )
 
             if len(indices) > 0:
@@ -168,11 +170,11 @@ class YOLO_Pred:
                         2,
                     )
 
-                    text_bg_y = max(0, y - 30)
+                    text_top = max(0, y - 30)
 
                     cv2.rectangle(
                         image,
-                        (x, text_bg_y),
+                        (x, text_top),
                         (x + max(w, 120), y),
                         color,
                         -1,
