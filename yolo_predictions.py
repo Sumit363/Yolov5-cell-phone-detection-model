@@ -26,9 +26,9 @@ class YOLO_Pred:
         self.colors = self._generate_colors()
 
         self.session = ort.InferenceSession(
-            self.onnx_model,
-            providers=["CPUExecutionProvider"],
-        )
+    self.onnx_model,
+    providers=["CPUExecutionProvider"],
+)
 
         self.input_name = self.session.get_inputs()[0].name
         self.output_names = [output.name for output in self.session.get_outputs()]
