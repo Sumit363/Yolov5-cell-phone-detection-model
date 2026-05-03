@@ -1,4 +1,6 @@
 train: data_images/train
 val: data_images/test
-nc : 0
-names : ['phone']
+
+nc: 1
+names:
+  - phone
