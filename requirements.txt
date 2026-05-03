@@ -1,7 +1,11 @@
-streamlit
+streamlit==1.38.0
+streamlit-webrtc==0.47.9
 opencv-python-headless
 numpy
-pyyaml
-Pillow
-streamlit-webrtc
-tornado
+pillow
+torch
+torchvision
+ultralytics
+tornado>=6.3.3
+av
+aiortc
