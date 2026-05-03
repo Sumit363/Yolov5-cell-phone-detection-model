@@ -1,104 +1,197 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+import os
+
 import cv2
 import numpy as np
 import yaml
 from yaml.loader import SafeLoader
 
 
-class YOLO_Pred():
+class YOLO_Pred:
     def __init__(self, onnx_model, data_yaml):
-        # load YAML
-        with open(data_yaml, mode='r') as f:
-            data_yaml = yaml.load(f, Loader=SafeLoader)
+        self.onnx_model = onnx_model
+        self.data_yaml = data_yaml
 
-        self.labels = data_yaml['names']
+        self._validate_files()
+        self.labels = self._load_labels()
         self.nc = len(self.labels)
+        self.colors = self._generate_colors()
 
-        # load YOLO model
-        self.yolo = cv2.dnn.readNetFromONNX(onnx_model)
+        self.yolo = cv2.dnn.readNetFromONNX(self.onnx_model)
+
+        if self.yolo.empty():
+            raise ValueError(
+                "OpenCV loaded an empty ONNX model. "
+                "Please check that best.onnx is valid and fully uploaded."
+            )
+
         self.yolo.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
         self.yolo.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
+    def _validate_files(self):
+        if not os.path.exists(self.onnx_model):
+            raise FileNotFoundError(f"ONNX model not found: {self.onnx_model}")
+
+        if not os.path.exists(self.data_yaml):
+            raise FileNotFoundError(f"YAML file not found: {self.data_yaml}")
+
+        model_size = os.path.getsize(self.onnx_model)
+
+        if model_size < 1024 * 1024:
+            raise ValueError(
+                f"ONNX model file is too small: {model_size} bytes. "
+                "This may mean best.onnx was not uploaded correctly, "
+                "or it is only a Git LFS pointer file."
+            )
+
+    def _load_labels(self):
+        with open(self.data_yaml, mode="r", encoding="utf-8") as file:
+            data = yaml.load(file, Loader=SafeLoader)
+
+        if not data:
+            raise ValueError("data.yaml is empty or invalid.")
+
+        if "names" not in data:
+            raise KeyError("data.yaml must contain a 'names' field.")
+
+        labels = data["names"]
+
+        if isinstance(labels, dict):
+            labels = list(labels.values())
+
+        if not isinstance(labels, list) or len(labels) == 0:
+            raise ValueError("'names' in data.yaml must be a non-empty list.")
+
+        return labels
+
     def predictions(self, image):
-        row, col, d = image.shape
+        if image is None:
+            raise ValueError("Input image is None.")
 
-        # step-1 convert image into square image
-        max_rc = max(row, col)
-        input_image = np.zeros((max_rc, max_rc, 3), dtype=np.uint8)
-        input_image[0:row, 0:col] = image
+        if len(image.shape) != 3:
+            raise ValueError("Input image must be a color image with 3 channels.")
 
-        # step-2 get prediction
-        INPUT_WH_YOLO = 640
+        original_h, original_w = image.shape[:2]
+
+        max_side = max(original_h, original_w)
+        input_image = np.zeros((max_side, max_side, 3), dtype=np.uint8)
+        input_image[0:original_h, 0:original_w] = image
+
+        input_size = 640
+
         blob = cv2.dnn.blobFromImage(
-            input_image, 1 / 255, (INPUT_WH_YOLO, INPUT_WH_YOLO),
-            swapRB=True, crop=False
+            input_image,
+            scalefactor=1 / 255.0,
+            size=(input_size, input_size),
+            mean=(0, 0, 0),
+            swapRB=True,
+            crop=False,
         )
+
         self.yolo.setInput(blob)
         preds = self.yolo.forward()
 
         detections = preds[0]
+
         boxes = []
         confidences = []
-        classes = []
+        class_ids = []
 
-        image_w, image_h = input_image.shape[:2]
-        x_factor = image_w / INPUT_WH_YOLO
-        y_factor = image_h / INPUT_WH_YOLO
+        x_factor = max_side / input_size
+        y_factor = max_side / input_size
 
-        for i in range(len(detections)):
-            detection = detections[i]
-            confidence = detection[4]
+        for detection in detections:
+            object_confidence = float(detection[4])
 
-            if confidence > 0.4:
-                class_score = detection[5:].max()
-                class_id = detection[5:].argmax()
+            if object_confidence < 0.4:
+                continue
 
-                if class_score > 0.25:
-                    cx, cy, w, h = detection[0:4]
+            class_scores = detection[5:]
+            class_id = int(np.argmax(class_scores))
+            class_score = float(class_scores[class_id])
 
-                    left = int((cx - 0.5 * w) * x_factor)
-                    top = int((cy - 0.5 * h) * y_factor)
-                    width = int(w * x_factor)
-                    height = int(h * y_factor)
+            if class_score < 0.25:
+                continue
 
-                    box = [left, top, width, height]
+            cx, cy, w, h = detection[0:4]
 
-                    boxes.append(box)
-                    confidences.append(float(confidence))
-                    classes.append(class_id)
+            left = int((cx - 0.5 * w) * x_factor)
+            top = int((cy - 0.5 * h) * y_factor)
+            width = int(w * x_factor)
+            height = int(h * y_factor)
+
+            boxes.append([left, top, width, height])
+            confidences.append(object_confidence)
+            class_ids.append(class_id)
 
         phone_count = 0
 
         if len(boxes) > 0:
-            index = cv2.dnn.NMSBoxes(boxes, confidences, 0.25, 0.45)
+            indices = cv2.dnn.NMSBoxes(
+                boxes,
+                confidences,
+                score_threshold=0.25,
+                nms_threshold=0.45,
+            )
 
-            if len(index) > 0:
-                index = index.flatten()
+            if len(indices) > 0:
+                indices = np.array(indices).flatten()
 
-                for ind in index:
-                    x, y, w, h = boxes[ind]
-                    bb_conf = int(confidences[ind] * 100)
-                    class_id = classes[ind]
-                    class_name = self.labels[class_id]
-                    colors = self.generate_colors(class_id)
+                for index in indices:
+                    x, y, w, h = boxes[index]
+                    confidence = confidences[index]
+                    class_id = class_ids[index]
 
-                    # Count only cell phones
-                    if class_name.lower() == "phone":
+                    if class_id >= len(self.labels):
+                        continue
+
+                    class_name = str(self.labels[class_id])
+                    color = self.colors[class_id]
+
+                    if class_name.lower() in ["phone", "cell phone", "cellphone", "mobile"]:
                         phone_count += 1
 
-                    text = f'{class_name}: {bb_conf}%'
+                    x = max(0, x)
+                    y = max(0, y)
+                    w = max(0, w)
+                    h = max(0, h)
 
-                    cv2.rectangle(image, (x, y), (x + w, y + h), colors, 2)
-                    cv2.rectangle(image, (x, y - 30), (x + w, y), colors, -1)
+                    label = f"{class_name}: {int(confidence * 100)}%"
+
+                    cv2.rectangle(
+                        image,
+                        (x, y),
+                        (x + w, y + h),
+                        color,
+                        2,
+                    )
+
+                    text_bg_y = max(0, y - 30)
+
+                    cv2.rectangle(
+                        image,
+                        (x, text_bg_y),
+                        (x + max(w, 120), y),
+                        color,
+                        -1,
+                    )
+
                     cv2.putText(
-                        image, text, (x, y - 10),
-                        cv2.FONT_HERSHEY_PLAIN, 0.7, (0, 0, 0), 1
+                        image,
+                        label,
+                        (x, max(15, y - 10)),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0, 0, 0),
+                        1,
+                        cv2.LINE_AA,
                     )
 
         return image, phone_count
 
-    def generate_colors(self, ID):
+    def _generate_colors(self):
         np.random.seed(10)
         colors = np.random.randint(100, 255, size=(self.nc, 3)).tolist()
-        return tuple(colors[ID])
+        return [tuple(color) for color in colors]
